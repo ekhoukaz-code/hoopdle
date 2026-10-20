@@ -1,0 +1,572 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HOOPDLE | Guess the NBA Player</title>
+<style>
+  :root {
+    --bg: #0b1018;
+    --panel: #141d29;
+    --tile: #202c3b;
+    --text: #f4f7fb;
+    --muted: #9aa9bc;
+    --orange: #ff8a35;
+    --green: #35a66f;
+    --yellow: #c99e30;
+    --grey: #465365;
+    --line: #293648;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background:
+      radial-gradient(ellipse at top, #182638 0%, var(--bg) 58%);
+    color: var(--text);
+    font-family: Arial, Helvetica, sans-serif;
+    min-height: 100vh;
+  }
+
+  header {
+    text-align: center;
+    padding: 27px 16px 20px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .logo {
+    font-size: clamp(32px, 8vw, 48px);
+    font-weight: 900;
+    letter-spacing: 3px;
+  }
+
+  .logo span { color: var(--orange); }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: 3px;
+    margin-top: 8px;
+  }
+
+  main {
+    max-width: 680px;
+    margin: auto;
+    padding: 22px 16px 50px;
+  }
+
+  .modes {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+
+  button, input { font: inherit; }
+
+  button {
+    cursor: pointer;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    padding: 12px 15px;
+    font-weight: 700;
+    transition: 0.15s;
+  }
+
+  button:focus-visible, input:focus-visible {
+    outline: 2px solid var(--orange);
+    outline-offset: 3px;
+  }
+
+  .mode {
+    flex: 1;
+    color: var(--muted);
+    background: var(--panel);
+  }
+
+  .mode.active {
+    color: white;
+    border-color: var(--orange);
+    background: #33251e;
+  }
+
+  .panel {
+    background: rgba(20, 29, 41, 0.96);
+    border: 1px solid var(--line);
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  h2 { margin: 0 0 8px; font-size: 20px; }
+
+  .muted { color: var(--muted); line-height: 1.5; }
+  .small { font-size: 13px; }
+
+  .status {
+    margin: 14px 0;
+    padding: 11px 12px;
+    border-radius: 8px;
+    background: #101721;
+    color: var(--muted);
+    min-height: 42px;
+    line-height: 1.4;
+  }
+
+  .clues {
+    padding-left: 20px;
+    line-height: 1.8;
+    margin-bottom: 0;
+  }
+
+  .clues li::marker { color: var(--orange); }
+
+  .search-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  input {
+    min-width: 0;
+    width: 100%;
+    background: #0c131d;
+    color: white;
+    border: 1px solid #344255;
+    border-radius: 9px;
+    padding: 13px;
+  }
+
+  input::placeholder { color: #738197; }
+
+  .primary {
+    background: var(--orange);
+    color: #1b120b;
+    border-color: var(--orange);
+    white-space: nowrap;
+  }
+
+  .secondary {
+    color: var(--text);
+    background: var(--tile);
+  }
+
+  button:hover { filter: brightness(1.12); }
+
+  .table-wrap { overflow-x: auto; }
+
+  table {
+    border-collapse: separate;
+    border-spacing: 4px;
+    width: 100%;
+    min-width: 440px;
+    font-size: 13px;
+    text-align: center;
+  }
+
+  th {
+    color: var(--muted);
+    font-size: 10px;
+    letter-spacing: 0.6px;
+    padding: 8px 2px;
+  }
+
+  td {
+    padding: 12px 5px;
+    border-radius: 5px;
+    background: var(--grey);
+    font-weight: 700;
+  }
+
+  td.correct { background: var(--green); }
+  td.close { background: var(--yellow); color: #161208; }
+  td.wrong { background: var(--grey); }
+
+  .legend {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    margin-right: 5px;
+  }
+
+  .hidden { display: none !important; }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    padding: 0 10px 30px;
+  }
+
+  @media (max-width: 440px) {
+    .panel { padding: 15px; }
+    .search-row { flex-direction: column; }
+    .primary { width: 100%; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">HOOP<span>DLE</span> 🏀</div>
+  <div class="subtitle">THE NBA PLAYER GUESSING GAME</div>
+</header>
+
+<main>
+  <div class="modes">
+    <button class="mode active" id="attributesMode">
+      PLAYER GUESS
+    </button>
+    <button class="mode" id="hintsMode">
+      MYSTERY HINTS
+    </button>
+  </div>
+
+  <section class="panel">
+    <h2 id="modeTitle">Who's the player?</h2>
+    <p class="muted small" id="modeDescription">
+      Guess the mystery player. Compare their team, position,
+      age, height and jersey number. You get six attempts.
+    </p>
+
+    <div class="status" id="status" role="status" aria-live="polite">
+      Enter a player name to start the game.
+    </div>
+
+    <label for="playerInput" class="small muted">
+      YOUR GUESS
+    </label>
+    <div class="search-row">
+      <input id="playerInput" list="playerOptions"
+        placeholder="Type an NBA player's name..."
+        autocomplete="off">
+      <datalist id="playerOptions"></datalist>
+      <button class="primary" id="guessButton">GUESS</button>
+    </div>
+
+    <p class="muted small" id="attemptCount">Guesses: 0 / 6</p>
+  </section>
+
+  <section class="panel" id="attributePanel">
+    <h2>📊 Player comparisons</h2>
+    <p class="muted small">
+      Green = exact match. Yellow = close or partly matching.
+      Arrows show whether the answer's number is higher or lower.
+    </p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>PLAYER</th>
+            <th>TEAM</th>
+            <th>POSITION</th>
+            <th>AGE</th>
+            <th>HEIGHT</th>
+            <th>NUMBER</th>
+          </tr>
+        </thead>
+        <tbody id="guessRows"></tbody>
+      </table>
+    </div>
+    <div class="legend">
+      <span><i class="dot" style="background:var(--green)"></i>Correct</span>
+      <span><i class="dot" style="background:var(--yellow)"></i>Close</span>
+      <span><i class="dot" style="background:var(--grey)"></i>Different</span>
+    </div>
+  </section>
+
+  <section class="panel hidden" id="hintPanel">
+    <h2>🕵️ Mystery clues</h2>
+    <p class="muted small">
+      Each wrong guess unlocks another clue.
+    </p>
+    <ol class="clues" id="clueList">
+      <li>Make your first guess to reveal a clue.</li>
+    </ol>
+  </section>
+
+  <section class="panel hidden" id="endPanel">
+    <h2 id="endTitle">Game over</h2>
+    <p id="endMessage" class="muted"></p>
+    <button class="primary" id="restartButton">PLAY AGAIN ↻</button>
+  </section>
+</main>
+
+<footer>
+  An independent fan-made guessing game. Not affiliated with the NBA.
+  Player data is a starter sample and may need updating.
+</footer>
+
+<script>
+  // STARTER PLAYER DATABASE
+  // Team, age, height and jersey number should be checked
+  // and updated against current roster information.
+  // Height is stored in total inches.
+
+  const players = [
+    {name:"Stephen Curry",team:"GSW",pos:"PG",age:38,height:74,number:30,
+      clues:["I became famous for my long-range shooting.","I have won multiple NBA championships.","I have spent my NBA career with Golden State."]},
+    {name:"LeBron James",team:"LAL",pos:"SF",age:41,height:81,number:23,
+      clues:["I entered the NBA straight out of high school.","I won a championship with three different franchises.","I am known as the King."]},
+    {name:"Jayson Tatum",team:"BOS",pos:"SF",age:28,height:80,number:0,
+      clues:["I play for a team with a long championship history.","I wear number zero.","I helped Boston win the 2024 NBA championship."]},
+    {name:"Giannis Antetokounmpo",team:"MIL",pos:"PF",age:31,height:83,number:34,
+      clues:["I was born in Greece.","My nickname is the Greek Freak.","I won the 2021 NBA Finals MVP award."]},
+    {name:"Nikola Jokic",team:"DEN",pos:"C",age:31,height:83,number:15,
+      clues:["I am a center from Serbia.","Passing is one of my biggest strengths.","I won the 2023 NBA Finals MVP award."]},
+    {name:"Luka Doncic",team:"LAL",pos:"PG",age:27,height:79,number:77,
+      clues:["I grew up playing professional basketball in Europe.","I am known for step-back three-pointers.","I wear number 77."]},
+    {name:"Kevin Durant",team:"HOU",pos:"PF",age:37,height:83,number:7,
+      clues:["I am an exceptionally tall scoring forward.","I won Olympic gold medals with Team USA.","My initials are KD."]},
+    {name:"Shai Gilgeous-Alexander",team:"OKC",pos:"PG",age:28,height:78,number:2,
+      clues:["I play for Oklahoma City.","I am known for my mid-range scoring.","I won the 2025 NBA MVP award."]},
+    {name:"Anthony Edwards",team:"MIN",pos:"SG",age:25,height:76,number:5,
+      clues:["My nickname is Ant-Man.","I play for Minnesota.","I was the first overall pick in the 2020 draft."]},
+    {name:"Victor Wembanyama",team:"SAS",pos:"C",age:22,height:88,number:1,
+      clues:["I am from France.","I am one of the tallest players in the league.","I was the first pick in the 2023 NBA draft."]},
+    {name:"Donovan Mitchell",team:"CLE",pos:"SG",age:30,height:74,number:45,
+      clues:["My nickname is Spida.","I play for Cleveland.","I wore number 45 for much of my career."]},
+    {name:"Devin Booker",team:"PHX",pos:"SG",age:29,height:77,number:1,
+      clues:["I play for Phoenix.","I scored 70 points in one NBA game.","I am a high-scoring shooting guard."]},
+    {name:"Tyrese Haliburton",team:"IND",pos:"PG",age:26,height:77,number:0,
+      clues:["I play point guard.","I am known for creative passing.","I played college basketball at Iowa State."]},
+    {name:"Joel Embiid",team:"PHI",pos:"C",age:32,height:84,number:21,
+      clues:["I was born in Cameroon.","I play center for Philadelphia.","My nickname is The Process."]},
+    {name:"Ja Morant",team:"MEM",pos:"PG",age:27,height:75,number:12,
+      clues:["I am known for explosive dunks.","I play for Memphis.","I played college basketball at Murray State."]},
+    {name:"Paolo Banchero",team:"ORL",pos:"PF",age:23,height:82,number:5,
+      clues:["I play for Orlando.","I was the first pick in the 2022 draft.","I played college basketball at Duke."]},
+    {name:"Trae Young",team:"WAS",pos:"PG",age:27,height:73,number:3,
+      clues:["I am a point guard known for deep three-pointers.","I played college basketball at Oklahoma.","I was drafted in 2018."]},
+    {name:"Jaylen Brown",team:"BOS",pos:"SG",age:29,height:78,number:7,
+      clues:["I play for Boston.","I won the 2024 NBA Finals MVP award.","I played college basketball at California."]},
+    {name:"Bam Adebayo",team:"MIA",pos:"C",age:29,height:81,number:13,
+      clues:["I play for Miami.","I am known for my defense.","I have represented Team USA in international basketball."]},
+    {name:"Cade Cunningham",team:"DET",pos:"PG",age:25,height:78,number:2,
+      clues:["I play for Detroit.","I was the first pick in the 2021 draft.","I played college basketball at Oklahoma State."]}
+  ];
+
+  const MAX_GUESSES = 6;
+  let answer;
+  let guesses = [];
+  let mode = "attributes";
+  let finished = false;
+  let roundNumber = 0;
+
+  const $ = id => document.getElementById(id);
+
+  const input = $("playerInput");
+
+  // Fill the autocomplete list with valid guesses.
+  players.forEach(player => {
+    const option = document.createElement("option");
+    option.value = player.name;
+    $("playerOptions").appendChild(option);
+  });
+
+  function chooseAnswer() {
+    // A simple rotation avoids immediately repeating the same answer.
+    // This is not a daily challenge yet.
+    const previous = answer ? answer.name : "";
+    let choices = players.filter(p => p.name !== previous);
+    answer = choices[Math.floor(Math.random() * choices.length)];
+    roundNumber++;
+  }
+
+  function startGame() {
+    guesses = [];
+    finished = false;
+    chooseAnswer();
+    input.value = "";
+    input.disabled = false;
+    $("guessButton").disabled = false;
+    $("guessRows").replaceChildren();
+    $("endPanel").classList.add("hidden");
+    $("attemptCount").textContent = "Guesses: 0 / " + MAX_GUESSES;
+    $("status").textContent = "Enter an NBA player name to begin.";
+    $("clueList").replaceChildren();
+
+    const firstClue = document.createElement("li");
+    firstClue.textContent = "Make your first guess to reveal a clue.";
+    $("clueList").appendChild(firstClue);
+    updateMode();
+    input.focus();
+  }
+
+  function updateMode() {
+    const hints = mode === "hints";
+    $("attributesMode").classList.toggle("active", !hints);
+    $("hintsMode").classList.toggle("active", hints);
+    $("attributePanel").classList.toggle("hidden", hints);
+    $("hintPanel").classList.toggle("hidden", !hints);
+    $("modeTitle").textContent = hints
+      ? "Who is the mystery player?"
+      : "Who's the player?";
+    $("modeDescription").textContent = hints
+      ? "Guess a player to unlock clues. Solve the mystery in six attempts."
+      : "Compare team, position, age, height and jersey number. You get six attempts.";
+    $("status").textContent = hints
+      ? "Your first mystery clue is waiting."
+      : "Enter a player name to start comparing stats.";
+  }
+
+  function setMode(newMode) {
+    mode = newMode;
+    startGame();
+  }
+
+  function compareNumber(guess, target) {
+    if (guess === target) return {className:"correct", symbol:"✓"};
+    return {
+      className:"wrong",
+      symbol: guess < target ? "↑" : "↓"
+    };
+  }
+
+  function makeCell(text, className) {
+    const td = document.createElement("td");
+    td.textContent = text;
+    td.className = className;
+    return td;
+  }
+
+  function renderGuess(player) {
+    const tr = document.createElement("tr");
+    const fields = [
+      {value:player.name, target:answer.name, type:"name"},
+      {value:player.team, target:answer.team, type:"team"},
+      {value:player.pos, target:answer.pos, type:"pos"},
+      {value:player.age, target:answer.age, type:"number"},
+      {value:player.height, target:answer.height, type:"number"},
+      {value:player.number, target:answer.number, type:"number"}
+    ];
+
+    fields.forEach(field => {
+      let text = field.value;
+      let result = {className:"wrong", symbol:""};
+
+      if (field.type === "name") {
+        if (field.value === field.target) {
+          result.className = "correct";
+        }
+      } else if (field.type === "team" || field.type === "pos") {
+        if (field.value === field.target) {
+          result.className = "correct";
+        }
+      } else {
+        result = compareNumber(field.value, field.target);
+        if (field.type === "number" && field.value === field.target) {
+          result.symbol = "✓";
+        }
+        if (field.type === "number" && field.value !== field.target) {
+          text = field.value + " " + result.symbol;
+        }
+      }
+
+      if (field.type === "team" && field.value !== field.target) {
+        const sameConference = ["BOS","NYK","PHI","CLE","MIL","IND","DET","ORL","MIA","ATL","CHI","TOR","CHA","WAS"].includes(field.value) &&
+          ["BOS","NYK","PHI","CLE","MIL","IND","DET","ORL","MIA","ATL","CHI","TOR","CHA","WAS"].includes(field.target);
+        if (sameConference) result.className = "close";
+      }
+
+      if (field.type === "pos" && field.value !== field.target) {
+        const groups = [["PG","SG"],["SF","PF"],["PF","C"]];
+        if (groups.some(group => group.includes(field.value) && group.includes(field.target))) {
+          result.className = "close";
+        }
+      }
+
+      tr.appendChild(makeCell(text, result.className));
+    });
+
+    $("guessRows").prepend(tr);
+  }
+
+  function revealClues() {
+    $("clueList").replaceChildren();
+    const unlocked = Math.min(guesses.length, answer.clues.length);
+    for (let i = 0; i < unlocked; i++) {
+      const li = document.createElement("li");
+      li.textContent = answer.clues[i];
+      $("clueList").appendChild(li);
+    }
+  }
+
+  function endGame(won) {
+    finished = true;
+    input.disabled = true;
+    $("guessButton").disabled = true;
+    $("endPanel").classList.remove("hidden");
+    $("endTitle").textContent = won ? "🏆 BUCKETS!" : "⏱ FULL TIME";
+    $("endMessage").textContent = won
+      ? "You guessed " + answer.name + " in " + guesses.length + " attempt(s)!"
+      : "The mystery player was " + answer.name + ". Give it another shot!";
+    $("status").textContent = won
+      ? "Correct! What a guess."
+      : "Round over. The answer has been revealed.";
+  }
+
+  function submitGuess() {
+    if (finished) return;
+
+    const typed = input.value.trim().toLowerCase();
+    const player = players.find(p => p.name.toLowerCase() === typed);
+
+    if (!player) {
+      $("status").textContent = "Choose a name from the suggestions list.";
+      return;
+    }
+
+    if (guesses.includes(player.name)) {
+      $("status").textContent = "You've already guessed that player.";
+      return;
+    }
+
+    guesses.push(player.name);
+    $("attemptCount").textContent =
+      "Guesses: " + guesses.length + " / " + MAX_GUESSES;
+
+    if (mode === "attributes") {
+      renderGuess(player);
+    } else {
+      revealClues();
+    }
+
+    input.value = "";
+
+    if (player.name === answer.name) {
+      endGame(true);
+    } else if (guesses.length >= MAX_GUESSES) {
+      endGame(false);
+    } else if (mode === "hints") {
+      $("status").textContent =
+        "Not quite! Clue " + guesses.length + " of " +
+        answer.clues.length + " revealed.";
+    } else {
+      $("status").textContent = "Not quite. Compare the colours and arrows.";
+    }
+  }
+
+  $("attributesMode").addEventListener("click", () => setMode("attributes"));
+  $("hintsMode").addEventListener("click", () => setMode("hints"));
+  $("guessButton").addEventListener("click", submitGuess);
+  $("restartButton").addEventListener("click", startGame);
+
+  input.addEventListener("keydown", event => {
+    if (event.key === "Enter") submitGuess();
+  });
+
+  startGame();
+</script>
+</body>
+</html>
